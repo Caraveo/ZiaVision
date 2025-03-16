@@ -58,10 +58,10 @@ Resources:
           sudo chmod +x /usr/local/bin/docker-compose
           
           # Get GitHub token from Secrets Manager
-          TOKEN=\$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
+          GH_TOKEN=\$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
           
           cd /home/ec2-user
-          git clone https://\${TOKEN}@github.com/${GitHubRepo}.git
+          git clone "https://\${GH_TOKEN}@github.com/${GitHubRepo}.git"
           cd ZiaVision
           
           # Create deploy script with variables
@@ -69,13 +69,13 @@ Resources:
           #!/bin/bash
           
           # Get GitHub token from Secrets Manager
-          TOKEN=$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
+          GH_TOKEN=$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
           
           # Stop and remove existing containers
           docker-compose down
           
           # Pull latest changes using token
-          git pull https://${TOKEN}@github.com/${GitHubRepo}.git main
+          git pull "https://$GH_TOKEN@github.com/${GitHubRepo}.git" main
           
           # Build and start containers in detached mode with production configuration
           export NODE_ENV=production
@@ -91,10 +91,7 @@ Resources:
           docker-compose logs -t --tail=100
           EOFMARKER
           
-          # Set correct permissions
           chmod +x deploy.sh
-          
-          # Initial deployment
           ./deploy.sh
 
   ZiaPipeline:
