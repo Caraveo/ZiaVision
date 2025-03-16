@@ -1,0 +1,112 @@
+---
+# AWS Deployment Configuration
+Region: us-west-2
+ApplicationName: ziavision
+Environment:
+  Name: ziavision-prod
+  Type: SingleInstance
+  Platform: Docker
+
+# Instance Configuration
+Instance:
+  Type: t2.micro
+  KeyName: aws-eb
+  SecurityGroup: ziavision-security
+  RootVolumeSize: 20
+  RootVolumeType: gp3
+
+# Auto Scaling
+AutoScaling:
+  MinSize: 1
+  MaxSize: 2
+  DesiredCapacity: 1
+
+# Load Balancer
+LoadBalancer:
+  Type: application
+  Scheme: internet-facing
+  SecurityGroup: ziavision-lb-security
+
+# Network Configuration
+Network:
+  VPC: vpc-02457408d8675ada1
+  Subnets:
+    - subnet-public-1
+    - subnet-public-2
+  SecurityGroups:
+    - Name: ziavision-security
+      Description: Security group for Zia Vision application
+      Rules:
+        - Type: ingress
+          Protocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - Type: ingress
+          Protocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - Type: ingress
+          Protocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+# Application Settings
+Application:
+  Port: 80
+  HealthCheckPath: /
+  HealthCheckTimeout: 5
+  HealthCheckInterval: 30
+
+# Environment Variables
+EnvironmentVariables:
+  NODE_ENV: production
+  PORT: 80
+
+# S3 Configuration
+S3:
+  DeploymentBucket: ziavision-deploy
+  AssetsBucket: ziavision-assets
+
+# Route 53 Configuration (for future use)
+Route53:
+  HostedZone: ziavision.com
+  Records:
+    - Name: www.ziavision.com
+      Type: A
+      TTL: 300
+
+# CloudFront Configuration (for future use)
+CloudFront:
+  Enabled: false
+  PriceClass: PriceClass_100
+  DefaultTTL: 86400
+  ViewerProtocolPolicy: redirect-to-https
+
+# Backup Configuration
+Backup:
+  Enabled: true
+  RetentionDays: 7
+  Schedule: rate(1 day)
+
+# Monitoring
+Monitoring:
+  DetailedMonitoring: true
+  Alarms:
+    - Name: CPUUtilization
+      Threshold: 80
+      Period: 300
+      EvaluationPeriods: 2
+    - Name: MemoryUtilization
+      Threshold: 80
+      Period: 300
+      EvaluationPeriods: 2
+
+# Tags
+Tags:
+  Environment: production
+  Project: ZiaVision
+  Owner: DevOps
+  CostCenter: Engineering 
