@@ -54,28 +54,28 @@ Resources:
           sudo usermod -aG docker ec2-user
           
           # Install Docker Compose
-          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           
           # Get GitHub token from Secrets Manager
-          GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
+          TOKEN=\$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
           
           cd /home/ec2-user
-          git clone https://${GITHUB_TOKEN}@github.com/${GitHubRepo}.git
+          git clone https://\${TOKEN}@github.com/${GitHubRepo}.git
           cd ZiaVision
           
           # Create deploy script with variables
-          cat > deploy.sh << EOF
+          cat > deploy.sh << 'EOF'
           #!/bin/bash
           
           # Get GitHub token from Secrets Manager
-          GITHUB_TOKEN=\$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
+          TOKEN=$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
           
           # Stop and remove existing containers
           docker-compose down
           
           # Pull latest changes using token
-          git pull https://\${GITHUB_TOKEN}@github.com/${GitHubRepo}.git main
+          git pull https://$TOKEN@github.com/${GitHubRepo}.git main
           
           # Build and start containers in detached mode with production configuration
           export NODE_ENV=production
