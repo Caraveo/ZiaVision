@@ -40,18 +40,16 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
-      ImageId: ami-01b3c7a0a3ef1741f # Update with a valid AMI for your region
+      ImageId: ami-01b3c7a0a3ef1741f
       KeyName: !Ref KeyPair
       SecurityGroups:
         - !Ref WebServerSecurityGroup
-      Tags:
-        - Key: Name
-          Value: ZiaVisionServer
+      IamInstanceProfile: !Ref EC2InstanceProfile
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           sudo yum update -y
-          sudo yum install -y git docker
+          sudo yum install -y git docker jq
           sudo service docker start
           sudo usermod -aG docker ec2-user
           
@@ -59,8 +57,11 @@ Resources:
           sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           
+          # Get GitHub token from Secrets Manager
+          GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id production/ziavision --region us-west-2 --query SecretString --output text | jq -r '.github_token')
+          
           cd /home/ec2-user
-          git clone https://github.com/${GitHubRepo}.git
+          git clone https://${GITHUB_TOKEN}@github.com/${GitHubRepo}.git
           cd ZiaVision
           
           # Create deploy script
@@ -188,6 +189,37 @@ Resources:
                   - cloudformation:*
                   - codepipeline:*
                 Resource: "*"
+
+  # Add new IAM role and instance profile for EC2
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: 
+                  - arn:aws:secretsmanager:us-west-2:982534393775:secret:production/ziavision-*
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref EC2Role
 
 Outputs:
   WebsiteURL:
