@@ -18,12 +18,32 @@ Parameters:
     Description: KeyPair for SSH access to the EC2 instance
 
 Resources:
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP/HTTPS access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
   ZiaInstance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
-      ImageId: ami-019ef799bcfe879d4 # Update with a valid AMI for your region
+      ImageId: ami-01b3c7a0a3ef1741f # Update with a valid AMI for your region
       KeyName: !Ref KeyPair
+      SecurityGroups:
+        - !Ref WebServerSecurityGroup
       Tags:
         - Key: Name
           Value: ZiaVisionServer
@@ -34,11 +54,38 @@ Resources:
           sudo yum install -y git docker
           sudo service docker start
           sudo usermod -aG docker ec2-user
+          
+          # Install Docker Compose
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          
           cd /home/ec2-user
           git clone https://github.com/${GitHubRepo}.git
           cd ZiaVision
-          chmod +x deploy.sh
-          ./deploy.sh
+          
+          # Create deploy script
+          cat > deploy.sh << 'EOF'
+          #!/bin/bash
+          
+          # Stop and remove existing containers
+          docker-compose down
+          
+          # Pull latest changes
+          git pull origin main
+          
+          # Build and start containers in detached mode with production configuration
+          export NODE_ENV=production
+          docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+          
+          # Prune unused images
+          docker image prune -f
+          
+          # Check container status
+          docker-compose ps
+          
+          # Show logs
+          docker-compose logs -t --tail=100
+          EOF
 
   ZiaPipeline:
     Type: AWS::CodePipeline::Pipeline
@@ -61,7 +108,7 @@ Resources:
                 Owner: !Select [0, !Split ["/", !Ref GitHubRepo]]
                 Repo: !Select [1, !Split ["/", !Ref GitHubRepo]]
                 Branch: main
-                OAuthToken: "{{resolve:secretsmanager:GitHubToken:SecretString}}"
+                OAuthToken: arn:aws:secretsmanager:us-west-2:982534393775:secret:production/ziavision-nVthYZ
               OutputArtifacts:
                 - Name: SourceOutput
 

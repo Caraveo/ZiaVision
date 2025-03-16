@@ -1,0 +1,17 @@
+services:
+  app:
+    environment:
+      - NODE_ENV=production
+    restart: always
+    ports:
+      - "80:3000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3" 
