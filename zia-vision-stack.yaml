@@ -17,6 +17,10 @@ Parameters:
     Default: VisionKey
     Description: KeyPair for SSH access to the EC2 instance
 
+  GitHubToken:
+    Type: String
+    Description: Personal access token for GitHub
+
 Resources:
   WebServerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -57,8 +61,8 @@ Resources:
           sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           
-          # Get GitHub token from Secrets Manager
-          TOKEN=\$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
+          # Get GitHub token from Secrets Manager using full ARN
+          TOKEN=$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:us-west-2:982534393775:secret:github_token-fDtL3o --region us-west-2 --query SecretString --output text)
           
           cd /home/ec2-user
           git clone https://\${TOKEN}@github.com/${GitHubRepo}.git
@@ -68,8 +72,8 @@ Resources:
           cat > deploy.sh << 'EOF'
           #!/bin/bash
           
-          # Get GitHub token from Secrets Manager
-          TOKEN=$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
+          # Get GitHub token from Secrets Manager using full ARN
+          TOKEN=$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:us-west-2:982534393775:secret:github_token-fDtL3o --region us-west-2 --query SecretString --output text)
           
           # Stop and remove existing containers
           docker-compose down
@@ -161,8 +165,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service:
-                - codepipeline.amazonaws.com
+              Service: codepipeline.amazonaws.com
             Action: sts:AssumeRole
       Policies:
         - PolicyName: PipelinePolicy
@@ -183,8 +186,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service:
-                - codebuild.amazonaws.com
+              Service: codebuild.amazonaws.com
             Action: sts:AssumeRole
       Policies:
         - PolicyName: BuildPolicy
@@ -199,7 +201,6 @@ Resources:
                   - codepipeline:*
                 Resource: "*"
 
-  # Add new IAM role and instance profile for EC2
   EC2Role:
     Type: AWS::IAM::Role
     Properties:
@@ -221,7 +222,7 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: 
-                  - arn:aws:secretsmanager:us-west-2:982534393775:secret:github_token-*
+                  - arn:aws:secretsmanager:us-west-2:982534393775:secret:github_token-fDtL3o
 
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
