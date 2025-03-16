@@ -1,112 +1,185 @@
----
-# AWS Deployment Configuration
-Region: us-west-2
-ApplicationName: ziavision
-Environment:
-  Name: ziavision-prod
-  Type: SingleInstance
-  Platform: Docker
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Zia Vision Application Infrastructure'
 
-# Instance Configuration
-Instance:
-  Type: t2.micro
-  KeyName: aws-eb
-  SecurityGroup: ziavision-security
-  RootVolumeSize: 20
-  RootVolumeType: gp3
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: production
+    Description: Environment name
 
-# Auto Scaling
-AutoScaling:
-  MinSize: 1
-  MaxSize: 2
-  DesiredCapacity: 1
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-vpc
 
-# Load Balancer
-LoadBalancer:
-  Type: application
-  Scheme: internet-facing
-  SecurityGroup: ziavision-lb-security
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-public-1
 
-# Network Configuration
-Network:
-  VPC: vpc-02457408d8675ada1
-  Subnets:
-    - subnet-public-1
-    - subnet-public-2
-  SecurityGroups:
-    - Name: ziavision-security
-      Description: Security group for Zia Vision application
-      Rules:
-        - Type: ingress
-          Protocol: tcp
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-public-2
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-igw
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-public-rt
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  ApplicationSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Zia Vision application
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-        - Type: ingress
-          Protocol: tcp
+        - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
-        - Type: ingress
-          Protocol: tcp
+        - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-sg
 
-# Application Settings
-Application:
-  Port: 80
-  HealthCheckPath: /
-  HealthCheckTimeout: 5
-  HealthCheckInterval: 30
+  ApplicationInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-0735c191cf914754d  # Amazon Linux 2 in us-west-2
+      SubnetId: !Ref PublicSubnet1
+      SecurityGroupIds:
+        - !Ref ApplicationSecurityGroup
+      KeyName: aws-eb
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y docker
+          service docker start
+          usermod -a -G docker ec2-user
+          docker pull nginx:latest
+          mkdir -p /var/www/html
+          aws s3 cp s3://ziavision-deploy/deployment.zip /tmp/
+          cd /var/www/html
+          unzip /tmp/deployment.zip
+          docker run -d -p 80:80 -v /var/www/html:/usr/share/nginx/html nginx:latest
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-instance
 
-# Environment Variables
-EnvironmentVariables:
-  NODE_ENV: production
-  PORT: 80
+  DeploymentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ziavision-deploy
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-deploy
 
-# S3 Configuration
-S3:
-  DeploymentBucket: ziavision-deploy
-  AssetsBucket: ziavision-assets
+  AssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ziavision-assets
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-assets
 
-# Route 53 Configuration (for future use)
-Route53:
-  HostedZone: ziavision.com
-  Records:
-    - Name: www.ziavision.com
-      Type: A
-      TTL: 300
-
-# CloudFront Configuration (for future use)
-CloudFront:
-  Enabled: false
-  PriceClass: PriceClass_100
-  DefaultTTL: 86400
-  ViewerProtocolPolicy: redirect-to-https
-
-# Backup Configuration
-Backup:
-  Enabled: true
-  RetentionDays: 7
-  Schedule: rate(1 day)
-
-# Monitoring
-Monitoring:
-  DetailedMonitoring: true
-  Alarms:
-    - Name: CPUUtilization
-      Threshold: 80
+  CPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: CPU utilization greater than 80%
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
       Period: 300
       EvaluationPeriods: 2
-    - Name: MemoryUtilization
       Threshold: 80
-      Period: 300
-      EvaluationPeriods: 2
+      AlarmActions:
+        - !Ref ApplicationScalingPolicy
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref ApplicationInstance
+      ComparisonOperator: GreaterThanThreshold
 
-# Tags
-Tags:
-  Environment: production
-  Project: ZiaVision
-  Owner: DevOps
-  CostCenter: Engineering 
+  ApplicationScalingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      ScalingAdjustment: 1
+      Cooldown: 300
+
+Outputs:
+  WebsiteURL:
+    Description: URL of the website
+    Value: !Sub http://${ApplicationInstance.PublicDnsName}
+  DeploymentBucketName:
+    Description: Name of deployment S3 bucket
+    Value: !Ref DeploymentBucket
+  AssetsBucketName:
+    Description: Name of assets S3 bucket
+    Value: !Ref AssetsBucket 
