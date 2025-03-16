@@ -59,23 +59,25 @@ Resources:
           
           # Get GitHub token from Secrets Manager
           GH_TOKEN=\$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
+          REPO=${GitHubRepo}
           
           cd /home/ec2-user
-          git clone "https://\${GH_TOKEN}@github.com/${GitHubRepo}.git"
+          git clone "https://\${GH_TOKEN}@github.com/\${REPO}.git"
           cd ZiaVision
           
           # Create deploy script with variables
-          cat > deploy.sh << 'EOFMARKER'
+          cat > deploy.sh << EOF
           #!/bin/bash
           
           # Get GitHub token from Secrets Manager
-          GH_TOKEN=$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
+          GH_TOKEN=\$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
+          REPO=${GitHubRepo}
           
           # Stop and remove existing containers
           docker-compose down
           
           # Pull latest changes using token
-          git pull "https://$GH_TOKEN@github.com/${GitHubRepo}.git" main
+          git pull "https://\${GH_TOKEN}@github.com/\${REPO}.git" main
           
           # Build and start containers in detached mode with production configuration
           export NODE_ENV=production
@@ -89,7 +91,7 @@ Resources:
           
           # Show logs
           docker-compose logs -t --tail=100
-          EOFMARKER
+          EOF
           
           chmod +x deploy.sh
           ./deploy.sh
