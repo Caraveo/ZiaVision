@@ -1,18 +1,28 @@
 #!/bin/bash
 
-# Set variables
-EC2_HOST="34.211.206.177"
-EC2_USER="ec2-user"
-APP_DIR="/var/www/ziavision"
+# Get the EC2 instance's public IP
+INSTANCE_IP=$(aws ec2 describe-instances \
+    --filters "Name=tag:Name,Values=ziavision-env3" \
+    --query "Reservations[].Instances[].PublicIpAddress" \
+    --output text)
 
-# Copy build files to EC2
-echo "Copying build files to EC2..."
-scp -r build/* $EC2_USER@$EC2_HOST:$APP_DIR/
+if [ -z "$INSTANCE_IP" ]; then
+    echo "Error: Could not find EC2 instance IP"
+    exit 1
+fi
 
-# SSH into EC2 and set permissions
-echo "Setting permissions..."
-ssh $EC2_USER@$EC2_HOST "sudo chown -R ec2-user:ec2-user $APP_DIR && \
-                         sudo chmod -R 755 $APP_DIR && \
-                         sudo systemctl restart nginx"
+echo "Deploying to EC2 instance at $INSTANCE_IP"
 
-echo "Deployment complete! Application is live at http://$EC2_HOST" 
+# Copy the deployment package
+scp -i ~/.ssh/aws-eb deployment.zip ec2-user@$INSTANCE_IP:/tmp/
+
+# SSH into the instance and deploy
+ssh -i ~/.ssh/aws-eb ec2-user@$INSTANCE_IP "sudo bash -c '
+    cd /var/www/html && \
+    cp /tmp/deployment.zip . && \
+    unzip -o deployment.zip && \
+    rm deployment.zip && \
+    systemctl restart nginx
+'"
+
+echo "Deployment complete!" 

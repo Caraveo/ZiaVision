@@ -1,0 +1,17 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ssm:CreateDocument",
+                "ssm:DeleteDocument",
+                "ssm:GetDocument",
+                "ssm:ListDocuments",
+                "ssm:SendCommand",
+                "ssm:GetCommandInvocation"
+            ],
+            "Resource": "*"
+        }
+    ]
+} 
