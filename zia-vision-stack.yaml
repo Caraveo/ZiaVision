@@ -22,7 +22,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
-      ImageId: ami-0c55b159cbfafe1f0 # Update with a valid AMI for your region
+      ImageId: ami-019ef799bcfe879d4 # Update with a valid AMI for your region
       KeyName: !Ref KeyPair
       Tags:
         - Key: Name
