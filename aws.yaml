@@ -6,6 +6,14 @@ Parameters:
     Type: String
     Default: production
     Description: Environment name
+  DeploymentBucketName:
+    Type: String
+    Default: ziavision-deploy
+    Description: Name of the S3 bucket for deployments
+  AssetsBucketName:
+    Type: String
+    Default: ziavision-assets
+    Description: Name of the S3 bucket for assets
 
 Resources:
   VPC:
@@ -103,6 +111,40 @@ Resources:
         - Key: Name
           Value: !Sub ${AWS::StackName}-sg
 
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${DeploymentBucketName}
+                  - !Sub arn:aws:s3:::${DeploymentBucketName}/*
+                  - !Sub arn:aws:s3:::${AssetsBucketName}
+                  - !Sub arn:aws:s3:::${AssetsBucketName}/*
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref EC2Role
+
   ApplicationInstance:
     Type: AWS::EC2::Instance
     Properties:
@@ -112,6 +154,7 @@ Resources:
       SecurityGroupIds:
         - !Ref ApplicationSecurityGroup
       KeyName: aws-eb
+      IamInstanceProfile: !Ref EC2InstanceProfile
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -121,7 +164,7 @@ Resources:
           usermod -a -G docker ec2-user
           docker pull nginx:latest
           mkdir -p /var/www/html
-          aws s3 cp s3://ziavision-deploy/deployment.zip /tmp/
+          aws s3 cp s3://${DeploymentBucketName}/deployment.zip /tmp/
           cd /var/www/html
           unzip /tmp/deployment.zip
           docker run -d -p 80:80 -v /var/www/html:/usr/share/nginx/html nginx:latest
@@ -132,7 +175,7 @@ Resources:
   DeploymentBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: ziavision-deploy
+      BucketName: !Ref DeploymentBucketName
       VersioningConfiguration:
         Status: Enabled
       Tags:
@@ -142,7 +185,7 @@ Resources:
   AssetsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: ziavision-assets
+      BucketName: !Ref AssetsBucketName
       VersioningConfiguration:
         Status: Enabled
       Tags:
@@ -159,19 +202,10 @@ Resources:
       Period: 300
       EvaluationPeriods: 2
       Threshold: 80
-      AlarmActions:
-        - !Ref ApplicationScalingPolicy
       Dimensions:
         - Name: InstanceId
           Value: !Ref ApplicationInstance
       ComparisonOperator: GreaterThanThreshold
-
-  ApplicationScalingPolicy:
-    Type: AWS::AutoScaling::ScalingPolicy
-    Properties:
-      AdjustmentType: ChangeInCapacity
-      ScalingAdjustment: 1
-      Cooldown: 300
 
 Outputs:
   WebsiteURL:
