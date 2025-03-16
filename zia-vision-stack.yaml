@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Deploy ZiaVision on AWS with Auto Deploy from GitHub
+
+Parameters:
+  GitHubRepo:
+    Type: String
+    Default: "Caraveo/ZiaVision"
+    Description: GitHub repository for the project
+
+  InstanceType:
+    Type: String
+    Default: "t3.micro"
+    Description: EC2 instance type
+
+  KeyPair:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: KeyPair for SSH access to the EC2 instance
+
+Resources:
+  ZiaInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: ami-0c55b159cbfafe1f0 # Update with a valid AMI for your region
+      KeyName: !Ref KeyPair
+      Tags:
+        - Key: Name
+          Value: ZiaVisionServer
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo yum update -y
+          sudo yum install -y git docker
+          sudo service docker start
+          sudo usermod -aG docker ec2-user
+          cd /home/ec2-user
+          git clone https://github.com/${GitHubRepo}.git
+          cd ZiaVision
+          chmod +x deploy.sh
+          ./deploy.sh
+
+  ZiaPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: ZiaVisionPipeline
+      RoleArn: !GetAtt PipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref PipelineBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: GitHubSource
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: '1'
+              Configuration:
+                Owner: !Select [0, !Split ["/", !Ref GitHubRepo]]
+                Repo: !Select [1, !Split ["/", !Ref GitHubRepo]]
+                Branch: main
+                OAuthToken: "{{resolve:secretsmanager:GitHubToken:SecretString}}"
+              OutputArtifacts:
+                - Name: SourceOutput
+
+        - Name: Build
+          Actions:
+            - Name: BuildApp
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref BuildProject
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+
+  BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: ZiaVisionBuild
+      Source:
+        Type: CODEPIPELINE
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:5.0
+        Type: LINUX_CONTAINER
+      ServiceRole: !GetAtt BuildRole.Arn
+
+  PipelineBucket:
+    Type: AWS::S3::Bucket
+
+  PipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PipelinePolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                  - codebuild:*
+                  - ec2:*
+                  - logs:*
+                Resource: "*"
+
+  BuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BuildPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                  - ec2:*
+                  - logs:*
+                  - cloudformation:*
+                  - codepipeline:*
+                Resource: "*"
+
+Outputs:
+  WebsiteURL:
+    Value: !Sub "http://${ZiaInstance.PublicDnsName}"
