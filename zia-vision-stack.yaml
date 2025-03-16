@@ -12,16 +12,16 @@ Parameters:
     Default: "t3.micro"
     Description: EC2 instance type
 
-  KeyPair:
-    Type: AWS::EC2::KeyPair::KeyName
-    Default: VisionKey
-    Description: KeyPair for SSH access to the EC2 instance
+  KeyPairName:
+    Type: String
+    Default: "VisionKey"
+    Description: Name of the key pair for SSH access
 
 Resources:
   WebServerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Enable HTTP/HTTPS access
+      GroupDescription: Enable HTTP/HTTPS/SSH access
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -40,161 +40,34 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
-      ImageId: ami-01b3c7a0a3ef1741f
-      KeyName: !Ref KeyPair
+      ImageId: ami-01b3c7a0a3ef1741f  # Amazon Linux 2 AMI in us-west-2
+      KeyName: !Ref KeyPairName
       SecurityGroups:
         - !Ref WebServerSecurityGroup
       IamInstanceProfile: !Ref EC2InstanceProfile
+      Tags:
+        - Key: Name
+          Value: ZiaVision-Instance
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           sudo yum update -y
           sudo yum install -y git docker jq
-          sudo service docker start
+          sudo systemctl start docker
+          sudo systemctl enable docker
           sudo usermod -aG docker ec2-user
-          
+
           # Install Docker Compose
           sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-\$(uname -s)-\$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
-          
-          # Get GitHub token from Secrets Manager
-          GH_TOKEN=\$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
-          REPO=${GitHubRepo}
-          
+
+          # Clone repository
           cd /home/ec2-user
-          git clone "https://\${GH_TOKEN}@github.com/\${REPO}.git"
+          git clone "https://github.com/${GitHubRepo}.git"
           cd ZiaVision
-          
-          # Create deploy script with variables
-          cat > deploy.sh << EOF
-          #!/bin/bash
-          
-          # Get GitHub token from Secrets Manager
-          GH_TOKEN=\$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
-          REPO=${GitHubRepo}
-          
-          # Stop and remove existing containers
-          docker-compose down
-          
-          # Pull latest changes using token
-          git pull "https://\${GH_TOKEN}@github.com/\${REPO}.git" main
-          
-          # Build and start containers in detached mode with production configuration
-          export NODE_ENV=production
-          docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-          
-          # Prune unused images
-          docker image prune -f
-          
-          # Check container status
-          docker-compose ps
-          
-          # Show logs
-          docker-compose logs -t --tail=100
-          EOF
-          
+
           chmod +x deploy.sh
           ./deploy.sh
-
-  ZiaPipeline:
-    Type: AWS::CodePipeline::Pipeline
-    Properties:
-      Name: ZiaVisionPipeline
-      RoleArn: !GetAtt PipelineRole.Arn
-      ArtifactStore:
-        Type: S3
-        Location: !Ref PipelineBucket
-      Stages:
-        - Name: Source
-          Actions:
-            - Name: GitHubSource
-              ActionTypeId:
-                Category: Source
-                Owner: ThirdParty
-                Provider: GitHub
-                Version: '1'
-              Configuration:
-                Owner: !Select [0, !Split ["/", !Ref GitHubRepo]]
-                Repo: !Select [1, !Split ["/", !Ref GitHubRepo]]
-                Branch: main
-                OAuthToken: arn:aws:secretsmanager:us-west-2:982534393775:secret:production/ziavision-nVthYZ
-              OutputArtifacts:
-                - Name: SourceOutput
-
-        - Name: Build
-          Actions:
-            - Name: BuildApp
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: '1'
-              Configuration:
-                ProjectName: !Ref BuildProject
-              InputArtifacts:
-                - Name: SourceOutput
-              OutputArtifacts:
-                - Name: BuildOutput
-
-  BuildProject:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: ZiaVisionBuild
-      Source:
-        Type: CODEPIPELINE
-      Artifacts:
-        Type: CODEPIPELINE
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:5.0
-        Type: LINUX_CONTAINER
-      ServiceRole: !GetAtt BuildRole.Arn
-
-  PipelineBucket:
-    Type: AWS::S3::Bucket
-
-  PipelineRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codepipeline.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: PipelinePolicy
-          PolicyDocument:
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:*
-                  - codebuild:*
-                  - ec2:*
-                  - logs:*
-                Resource: "*"
-
-  BuildRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codebuild.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: BuildPolicy
-          PolicyDocument:
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:*
-                  - ec2:*
-                  - logs:*
-                  - cloudformation:*
-                  - codepipeline:*
-                Resource: "*"
 
   EC2Role:
     Type: AWS::IAM::Role
@@ -208,16 +81,6 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-      Policies:
-        - PolicyName: SecretsManagerAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - secretsmanager:GetSecretValue
-                Resource: 
-                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:github_token-*
 
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -227,5 +90,14 @@ Resources:
         - !Ref EC2Role
 
 Outputs:
+  InstancePublicDNS:
+    Description: Public DNS name of the EC2 instance
+    Value: !GetAtt ZiaInstance.PublicDnsName
+
+  SSHCommand:
+    Description: Command to SSH into the instance
+    Value: !Sub "ssh -i VisionKey.pem ec2-user@${ZiaInstance.PublicDnsName}"
+
   WebsiteURL:
+    Description: URL to access the website
     Value: !Sub "http://${ZiaInstance.PublicDnsName}"
