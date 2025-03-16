@@ -221,7 +221,7 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: 
-                  - arn:aws:secretsmanager:us-west-2:982534393775:secret:github_token-fDtL3o
+                  - arn:aws:secretsmanager:us-west-2:982534393775:secret:github_token-*
 
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
