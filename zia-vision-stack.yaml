@@ -17,10 +17,6 @@ Parameters:
     Default: VisionKey
     Description: KeyPair for SSH access to the EC2 instance
 
-  GitHubToken:
-    Type: String
-    Description: Personal access token for GitHub
-
 Resources:
   WebServerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
