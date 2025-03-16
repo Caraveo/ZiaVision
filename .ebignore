@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env
+node_modules/
+client/node_modules/
+client/build/
+*.mp4
+*.webm
+.DS_Store
+npm-debug.log
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml 
