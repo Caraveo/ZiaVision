@@ -8,11 +8,11 @@ Parameters:
     Description: Environment name
   DeploymentBucketName:
     Type: String
-    Default: ziavision-deploy
+    Default: ziavision-deploy-982534393775
     Description: Name of the S3 bucket for deployments
   AssetsBucketName:
     Type: String
-    Default: ziavision-assets
+    Default: ziavision-assets-982534393775
     Description: Name of the S3 bucket for assets
 
 Resources:
