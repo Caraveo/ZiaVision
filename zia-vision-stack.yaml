@@ -14,6 +14,7 @@ Parameters:
 
   KeyPair:
     Type: AWS::EC2::KeyPair::KeyName
+    Default: VisionKey
     Description: KeyPair for SSH access to the EC2 instance
 
 Resources:
