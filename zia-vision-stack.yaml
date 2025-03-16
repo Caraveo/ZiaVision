@@ -58,21 +58,24 @@ Resources:
           sudo chmod +x /usr/local/bin/docker-compose
           
           # Get GitHub token from Secrets Manager
-          GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id production/ziavision --region us-west-2 --query SecretString --output text | jq -r '.github_token')
+          GITHUB_TOKEN=$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
           
           cd /home/ec2-user
           git clone https://${GITHUB_TOKEN}@github.com/${GitHubRepo}.git
           cd ZiaVision
           
-          # Create deploy script
-          cat > deploy.sh << 'EOF'
+          # Create deploy script with variables
+          cat > deploy.sh << EOF
           #!/bin/bash
+          
+          # Get GitHub token from Secrets Manager
+          GITHUB_TOKEN=\$(aws secretsmanager get-secret-value --secret-id github_token --region us-west-2 --query SecretString --output text)
           
           # Stop and remove existing containers
           docker-compose down
           
-          # Pull latest changes
-          git pull origin main
+          # Pull latest changes using token
+          git pull https://\${GITHUB_TOKEN}@github.com/${GitHubRepo}.git main
           
           # Build and start containers in detached mode with production configuration
           export NODE_ENV=production
@@ -87,6 +90,12 @@ Resources:
           # Show logs
           docker-compose logs -t --tail=100
           EOF
+          
+          # Set correct permissions
+          chmod +x deploy.sh
+          
+          # Initial deployment
+          ./deploy.sh
 
   ZiaPipeline:
     Type: AWS::CodePipeline::Pipeline
@@ -212,7 +221,7 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: 
-                  - arn:aws:secretsmanager:us-west-2:982534393775:secret:production/ziavision-*
+                  - arn:aws:secretsmanager:us-west-2:982534393775:secret:github_token-fDtL3o
 
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
