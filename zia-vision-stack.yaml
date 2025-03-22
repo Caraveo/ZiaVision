@@ -62,12 +62,14 @@ Resources:
           node --version
           npm --version
 
-          # Install n for Node.js version management
+          # Install global packages
           sudo npm install -g n
           sudo n 18
-
-          # Configure npm to ignore deprecated warnings during build
+          sudo npm install -g react-scripts
+          
+          # Configure npm
           npm config set ignore-warnings true
+          npm config set legacy-peer-deps true
           
           sudo systemctl start docker
           sudo systemctl enable docker
@@ -82,18 +84,13 @@ Resources:
           git clone "https://github.com/${GitHubRepo}.git"
           cd ZiaVision
 
-          # Install root dependencies
-          npm install --legacy-peer-deps
-
-          # Install client dependencies
+          # Install dependencies and build
+          npm ci
           cd client
-          npm install --legacy-peer-deps
-          npm install react-scripts --save-dev
-          cd ..
-
-          # Build the client
-          cd client
-          npm run build
+          rm -rf node_modules package-lock.json
+          npm ci
+          npm rebuild
+          NODE_ENV=production npm run build
           cd ..
 
           # Build and deploy the application
@@ -102,7 +99,7 @@ Resources:
           sudo docker compose up -d --build
 
           # Enable automatic updates (optional)
-          echo "*/5 * * * * cd /home/ec2-user/ZiaVision && git pull && cd client && npm install && npm run build && cd .. && sudo docker compose up -d --build" | crontab -
+          echo "*/5 * * * * cd /home/ec2-user/ZiaVision && git pull && npm ci && cd client && npm ci && npm run build && cd .. && sudo docker compose up -d --build" | crontab -
 
   EC2Role:
     Type: AWS::IAM::Role
