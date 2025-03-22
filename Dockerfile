@@ -18,4 +18,4 @@ RUN cd client && npm run build
 
 # Start the application
 EXPOSE 3000
-CMD ["npm", "start"] 
+CMD ["node", "server.js"] 
