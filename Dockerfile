@@ -1,35 +1,21 @@
-# Build stage
-FROM node:18-alpine as builder
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Install dependencies
+# Copy package files
 COPY package*.json ./
-RUN npm install
+COPY client/package*.json ./client/
 
-# Copy client files
-COPY client/package*.json client/
+# Install dependencies
+RUN npm install
 RUN cd client && npm install
 
-# Copy all files
+# Copy source code
 COPY . .
 
 # Build client
 RUN cd client && npm run build
 
-# Production stage
-FROM node:18-alpine
-
-WORKDIR /app
-
-# Copy built files
-COPY --from=builder /app/client/build ./client/build
-COPY package*.json ./
-COPY server.js ./
-
-# Install production dependencies
-RUN npm install --production
-
+# Start the application
 EXPOSE 3000
-
 CMD ["npm", "start"] 
