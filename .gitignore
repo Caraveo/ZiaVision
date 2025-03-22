@@ -57,3 +57,4 @@ Thumbs.db
 
 # Docker volumes
 mongodb_data/ 
+.vercel

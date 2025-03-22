@@ -1,17 +1,19 @@
 {
   "name": "ziavision",
   "version": "1.0.0",
+  "private": true,
   "description": "ZiaVision - Innovative Solutions",
   "main": "src/server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "cd client && npm start",
     "dev": "nodemon server.js",
-    "test": "jest",
-    "build": "cd client && CI=false npm install && npm run build",
+    "test": "cd client && npm test",
+    "build": "cd client && npm install && npm run build",
     "lint": "eslint .",
     "client": "cd client && npm start",
     "install-all": "npm install && cd client && npm install",
-    "deploy": "npm run install-all && npm run build && npm start"
+    "deploy": "npm run install-all && npm run build && npm start",
+    "vercel-build": "cd client && npm install && npm run build"
   },
   "dependencies": {
     "express": "^4.18.2",
