@@ -61,13 +61,28 @@ Resources:
           #!/bin/bash
           yum update -y
           yum install -y git
+
+          # Install Node.js 18.x
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
           . ~/.nvm/nvm.sh
           nvm install 18
           nvm use 18
-          git clone https://github.com/ZiaVision/ZiaVision.git
+
+          # Clone and setup application
+          cd /home/ec2-user
+          git clone https://github.com/Caraveo/ZiaVision.git
           cd ZiaVision
+
+          # Install dependencies
           npm install
+          cd client
+          npm install --legacy-peer-deps
+          
+          # Build the application
+          CI=false npm run build
+          cd ..
+
+          # Start the application
           npm start
 
 Outputs:
