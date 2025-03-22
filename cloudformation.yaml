@@ -4,13 +4,13 @@ Description: Simple EC2 instance deployment for ZiaVision
 Mappings:
   RegionMap:
     us-east-1:
-      AMI: ami-0c7217cdde317cfec
+      AMI: ami-0261755bbcb8c4a84    # Ubuntu 22.04 LTS
     us-east-2:
-      AMI: ami-0866a04d72a1f5479
+      AMI: ami-024e6efaf93d85776
     us-west-1:
       AMI: ami-0f8e81a3da6e2510a
     us-west-2:
-      AMI: ami-01b3c7a0a3ef1741f
+      AMI: ami-03f65b8614a860c29
     eu-west-1:
       AMI: ami-0694d931cee176e7d
 
@@ -59,19 +59,25 @@ Resources:
       UserData: 
         Fn::Base64: |
           #!/bin/bash
-          yum update -y
-          yum install -y git
+          # Update package list and install dependencies
+          sudo apt-get update
+          sudo apt-get install -y git curl
 
           # Install Node.js 18.x
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-          . ~/.nvm/nvm.sh
-          nvm install 18
-          nvm use 18
+          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+
+          # Verify installation
+          node --version
+          npm --version
 
           # Clone and setup application
-          cd /home/ec2-user
+          cd /home/ubuntu
           git clone https://github.com/Caraveo/ZiaVision.git
           cd ZiaVision
+
+          # Set permissions
+          sudo chown -R ubuntu:ubuntu /home/ubuntu/ZiaVision
 
           # Install dependencies
           npm install
@@ -79,11 +85,19 @@ Resources:
           npm install --legacy-peer-deps
           
           # Build the application
-          CI=false npm run build
+          export CI=false
+          npm run build
           cd ..
 
-          # Start the application
-          npm start
+          # Install PM2 globally
+          sudo npm install -g pm2
+
+          # Start the application with PM2
+          pm2 start server.js --name "ziavision"
+          pm2 save
+          
+          # Setup PM2 to start on system reboot
+          sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ubuntu --hp /home/ubuntu
 
 Outputs:
   WebsiteURL:
@@ -92,4 +106,4 @@ Outputs:
 
   SSHCommand:
     Description: SSH command
-    Value: !Sub 'ssh -i ${KeyName}.pem ec2-user@${WebServer.PublicDnsName}' 
+    Value: !Sub 'ssh -i ${KeyName}.pem ubuntu@${WebServer.PublicDnsName}' 
