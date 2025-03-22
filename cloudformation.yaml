@@ -71,6 +71,9 @@ Resources:
           node --version
           npm --version
 
+          # Install serve globally
+          sudo npm install -g serve
+
           # Clone and setup application
           cd /home/ubuntu
           git clone https://github.com/Caraveo/ZiaVision.git
@@ -92,8 +95,17 @@ Resources:
           # Install PM2 globally
           sudo npm install -g pm2
 
+          # Create a startup script
+          cat << 'EOF' > /home/ubuntu/start-app.sh
+          #!/bin/bash
+          cd /home/ubuntu/ZiaVision/client
+          serve -s build -p 3000
+          EOF
+
+          chmod +x /home/ubuntu/start-app.sh
+
           # Start the application with PM2
-          pm2 start server.js --name "ziavision"
+          pm2 start /home/ubuntu/start-app.sh --name "ziavision"
           pm2 save
           
           # Setup PM2 to start on system reboot
@@ -106,4 +118,4 @@ Outputs:
 
   SSHCommand:
     Description: SSH command
-    Value: !Sub 'ssh -i ${KeyName}.pem ubuntu@${WebServer.PublicDnsName}' 
+    Value: !Sub 'ssh -i ${KeyName}.pem ubuntu@${WebServer.PublicDnsName}'
