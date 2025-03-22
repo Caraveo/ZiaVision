@@ -101,34 +101,10 @@ Resources:
           # Enable automatic updates (optional)
           echo "*/5 * * * * cd /home/ec2-user/ZiaVision && git pull && npm ci && cd client && npm ci && npm run build && cd .. && sudo docker compose up -d --build" | crontab -
 
-  EC2Role:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ec2.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-
-  EC2InstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Path: "/"
-      Roles:
-        - !Ref EC2Role
-
 Outputs:
   InstancePublicDNS:
     Description: Public DNS name of the EC2 instance
     Value: !GetAtt ZiaInstance.PublicDnsName
-
-  SSHCommand:
-    Description: Command to SSH into the instance
-    Value: !Sub "ssh -i VisionKey.pem ec2-user@${ZiaInstance.PublicDnsName}"
 
   WebsiteURL:
     Description: URL to access the website
