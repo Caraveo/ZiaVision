@@ -1,13 +1,28 @@
 services:
-  web:
-    build: .
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/client/node_modules
+    command: sh -c "cd client && npm install && npm run build && cd .. && npm start"
+
+  nginx:
+    image: nginx:alpine
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - ./client/public/videos:/usr/share/nginx/html/videos
-      - ./client/public/PITCH:/usr/share/nginx/html/PITCH
-    networks:
-      - ziavision-network
+      - ./client/build:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
 
 networks:
   ziavision-network:

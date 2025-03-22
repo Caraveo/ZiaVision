@@ -1,31 +1,35 @@
 # Build stage
-FROM node:18 as build
+FROM node:18-alpine as builder
 
-WORKDIR /usr/src/app
-
-# Copy package files
-COPY client/package*.json ./
+WORKDIR /app
 
 # Install dependencies
+COPY package*.json ./
 RUN npm install
 
-# Copy client source code
-COPY client/ ./
+# Copy client files
+COPY client/package*.json client/
+RUN cd client && npm install
 
-# Build React app
-RUN npm run build
+# Copy all files
+COPY . .
+
+# Build client
+RUN cd client && npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM node:18-alpine
 
-# Copy built assets from build stage
-COPY --from=build /usr/src/app/build /usr/share/nginx/html
+WORKDIR /app
 
-# Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy built files
+COPY --from=builder /app/client/build ./client/build
+COPY package*.json ./
+COPY server.js ./
 
-# Expose port
-EXPOSE 80
+# Install production dependencies
+RUN npm install --production
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"] 
+EXPOSE 3000
+
+CMD ["npm", "start"] 
