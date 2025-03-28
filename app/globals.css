@@ -54,7 +54,9 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: linear-gradient(135deg, #000000 0%, #0a192f 50%, #112240 100%);
+    min-height: 100vh;
   }
 }
 
