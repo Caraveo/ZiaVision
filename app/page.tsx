@@ -19,6 +19,15 @@ export default function Home() {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="container mx-auto px-4">
             <section className="text-center">
+              <div className="relative w-32 h-32 mx-auto mb-8">
+                <Image
+                  src="/zia.png"
+                  alt="Zia Logo"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                  className="drop-shadow-2xl"
+                />
+              </div>
               <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-white via-white/90 to-white/80 text-transparent bg-clip-text mb-6">
                 Welcome to Zia Vision
               </h1>
