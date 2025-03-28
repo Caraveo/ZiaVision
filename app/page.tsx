@@ -19,7 +19,7 @@ export default function Home() {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="container mx-auto px-4">
             <section className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 text-transparent bg-clip-text mb-6">
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-white via-white/90 to-white/80 text-transparent bg-clip-text mb-6">
                 Welcome to Zia Vision
               </h1>
               <p className="text-xl text-blue-100 max-w-3xl mx-auto mb-8">
@@ -45,7 +45,7 @@ export default function Home() {
         <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           <Card className="border-blue-500/20">
             <CardContent className="p-6">
-              <h2 className="text-2xl font-bold text-blue-300 mb-4">Vision</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">Vision</h2>
               <p className="text-blue-100 mb-4">
                 Discover our vision for the future and how we're working to make it a reality.
               </p>
@@ -61,7 +61,7 @@ export default function Home() {
 
           <Card className="border-blue-500/20">
             <CardContent className="p-6">
-              <h2 className="text-2xl font-bold text-blue-300 mb-4">Dream</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">Dream</h2>
               <p className="text-blue-100 mb-4">
                 Explore the dreams that drive our innovation and creativity in everything we do.
               </p>
@@ -77,7 +77,7 @@ export default function Home() {
 
           <Card className="border-blue-500/20">
             <CardContent className="p-6">
-              <h2 className="text-2xl font-bold text-blue-300 mb-4">Learn</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">Learn</h2>
               <p className="text-blue-100 mb-4">
                 Access educational resources and learn about our technologies and methodologies.
               </p>
@@ -93,7 +93,7 @@ export default function Home() {
         </section>
 
         <section className="text-center prism-container p-8">
-          <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-blue-300 to-blue-500 text-transparent bg-clip-text">
+          <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-white via-white/90 to-white/80 text-transparent bg-clip-text">
             Our Mission
           </h2>
           <p className="text-xl text-blue-100 max-w-3xl mx-auto">
