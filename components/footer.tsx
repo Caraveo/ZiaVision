@@ -6,14 +6,16 @@ export default function Footer() {
       <div className="container py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
-            <h3 className="text-lg font-bold bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 text-transparent bg-clip-text">
+            <h3 className="text-lg font-bold bg-gradient-to-r from-white via-white/90 to-white/80 text-transparent bg-clip-text">
               Zia Vision
             </h3>
             <p className="text-sm text-blue-200">Building the next generation of connected experiences.</p>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-blue-300">Videos</h3>
+            <h3 className="text-lg font-semibold bg-gradient-to-r from-white via-white/90 to-white/80 text-transparent bg-clip-text">
+              Videos
+            </h3>
             <ul className="space-y-2">
               <li>
                 <Link href="/vision" className="text-sm text-blue-200 hover:text-blue-100 transition-colors">
@@ -34,7 +36,9 @@ export default function Footer() {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-blue-300">Resources</h3>
+            <h3 className="text-lg font-semibold bg-gradient-to-r from-white via-white/90 to-white/80 text-transparent bg-clip-text">
+              Resources
+            </h3>
             <ul className="space-y-2">
               <li>
                 <Link href="/pitch" className="text-sm text-blue-200 hover:text-blue-100 transition-colors">
@@ -55,16 +59,18 @@ export default function Footer() {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-blue-300">Connect</h3>
+            <h3 className="text-lg font-semibold bg-gradient-to-r from-white via-white/90 to-white/80 text-transparent bg-clip-text">
+              Connect
+            </h3>
             <ul className="space-y-2">
               <li>
-                <span className="text-sm text-gray-500 cursor-not-allowed">
-                  Twitter
+                <span className="text-sm text-black opacity-50 cursor-not-allowed select-none">
+                  Twitter (Coming Soon)
                 </span>
               </li>
               <li>
-                <span className="text-sm text-gray-500 cursor-not-allowed">
-                  Instagram
+                <span className="text-sm text-black opacity-50 cursor-not-allowed select-none">
+                  Instagram (Coming Soon)
                 </span>
               </li>
               <li>
