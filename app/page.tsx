@@ -29,10 +29,10 @@ export default function Home() {
                 />
               </div>
               <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-white via-white/90 to-white/80 text-transparent bg-clip-text mb-6">
-                Welcome to Zia Vision
+                A Vision for the Future
               </h1>
               <p className="text-xl text-blue-100 max-w-3xl mx-auto mb-8">
-                Explore our vision, dreams, and learning resources through immersive video experiences.
+                Explore our vision, dreams, and learning resources through video experiences.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Button asChild className="bg-blue-600/70 hover:bg-blue-600/90">
@@ -99,16 +99,6 @@ export default function Home() {
               </Button>
             </CardContent>
           </Card>
-        </section>
-
-        <section className="text-center prism-container p-8">
-          <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-white via-white/90 to-white/80 text-transparent bg-clip-text">
-            Our Mission
-          </h2>
-          <p className="text-xl text-blue-100 max-w-3xl mx-auto">
-            We're building the next generation of connected experiences, bringing people together in new ways through
-            innovative technology and creative solutions.
-          </p>
         </section>
       </div>
     </div>
