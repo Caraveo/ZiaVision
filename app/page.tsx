@@ -6,7 +6,7 @@ import Image from "next/image"
 export default function Home() {
   return (
     <div>
-      <div className="relative w-full h-[600px] mb-16">
+      <div className="relative w-full h-screen mb-16">
         <Image
           src="/InTheAir.png"
           alt="In The Air"
@@ -15,29 +15,33 @@ export default function Home() {
           priority
           className="w-full"
         />
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="container mx-auto px-4">
+            <section className="text-center">
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 text-transparent bg-clip-text mb-6">
+                Welcome to Zia Vision
+              </h1>
+              <p className="text-xl text-blue-100 max-w-3xl mx-auto mb-8">
+                Explore our vision, dreams, and learning resources through immersive video experiences.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <Button asChild className="bg-blue-600/70 hover:bg-blue-600/90">
+                  <Link href="/vision">Explore Vision</Link>
+                </Button>
+                <Button asChild className="bg-blue-600/70 hover:bg-blue-600/90">
+                  <Link href="/dream">Explore Dream</Link>
+                </Button>
+                <Button asChild className="bg-blue-600/70 hover:bg-blue-600/90">
+                  <Link href="/learn">Explore Learn</Link>
+                </Button>
+              </div>
+            </section>
+          </div>
+        </div>
       </div>
       
       <div className="container mx-auto px-4">
-        <section className="text-center mb-16">
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 text-transparent bg-clip-text mb-6">
-            Welcome to Zia Vision
-          </h1>
-          <p className="text-xl text-blue-100 max-w-3xl mx-auto mb-8">
-            Explore our vision, dreams, and learning resources through immersive video experiences.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button asChild className="bg-blue-600/70 hover:bg-blue-600/90">
-              <Link href="/vision">Explore Vision</Link>
-            </Button>
-            <Button asChild className="bg-blue-600/70 hover:bg-blue-600/90">
-              <Link href="/dream">Explore Dream</Link>
-            </Button>
-            <Button asChild className="bg-blue-600/70 hover:bg-blue-600/90">
-              <Link href="/learn">Explore Learn</Link>
-            </Button>
-          </div>
-        </section>
-
         <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           <Card className="border-blue-500/20">
             <CardContent className="p-6">
