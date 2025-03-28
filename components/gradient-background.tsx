@@ -2,6 +2,12 @@
 
 import { useEffect, useRef } from "react"
 
+interface Point {
+  x: number;
+  y: number;
+  color: string;
+}
+
 export default function GradientBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -25,28 +31,25 @@ export default function GradientBackground() {
     window.addEventListener("resize", resizeCanvas)
     resizeCanvas()
 
-    // More vibrant blue colors for the gradient animation
-    const colors = [
-      { r: 0, g: 102, b: 255 }, // Bright blue
-      { r: 0, g: 153, b: 255 }, // Sky blue
-      { r: 51, g: 51, b: 255 }, // Royal blue
-      { r: 0, g: 0, b: 204 }, // Deep blue
-      { r: 102, g: 0, b: 255 }, // Blue-purple
-      { r: 0, g: 204, b: 255 }, // Cyan blue
-    ]
+    // Generate random color
+    const getRandomColor = (): string => {
+      const colors = [
+        'rgba(255, 255, 255, 0.1)',
+        'rgba(255, 255, 255, 0.05)',
+        'rgba(255, 255, 255, 0.02)'
+      ];
+      return colors[Math.floor(Math.random() * colors.length)];
+    };
 
     // Create gradient points
-    const points = []
+    const points: Point[] = []
     const numPoints = 10 // More points for more complex gradients
 
     for (let i = 0; i < numPoints; i++) {
       points.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.5, // Slightly faster movement
-        vy: (Math.random() - 0.5) * 0.5,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        size: Math.random() * 0.5 + 0.5, // Variable size for more dynamic effect
+        color: getRandomColor()
       })
     }
 
@@ -57,12 +60,12 @@ export default function GradientBackground() {
 
       // Update point positions
       points.forEach((point) => {
-        point.x += point.vx
-        point.y += point.vy
+        point.x += (Math.random() - 0.5) * 0.5
+        point.y += (Math.random() - 0.5) * 0.5
 
         // Bounce off edges
-        if (point.x < 0 || point.x > width) point.vx *= -1
-        if (point.y < 0 || point.y > height) point.vy *= -1
+        if (point.x < 0 || point.x > width) point.x = Math.random() * width
+        if (point.y < 0 || point.y > height) point.y = Math.random() * height
       })
 
       // Create gradients between points
@@ -73,12 +76,11 @@ export default function GradientBackground() {
           0,
           points[i].x,
           points[i].y,
-          Math.max(width, height) * points[i].size,
+          Math.max(width, height) * 0.5,
         )
 
-        const color = points[i].color
-        gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.4)`)
-        gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`)
+        gradient.addColorStop(0, points[i].color)
+        gradient.addColorStop(1, "transparent")
 
         ctx.fillStyle = gradient
         ctx.fillRect(0, 0, width, height)
