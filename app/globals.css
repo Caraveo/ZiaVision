@@ -155,7 +155,14 @@ h1 {
   text-shadow: none;
 }
 
-h2,
+h2 {
+  background: linear-gradient(to right, #f8f8f8, #f0f0f0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+}
+
 h3,
 h4,
 h5,
